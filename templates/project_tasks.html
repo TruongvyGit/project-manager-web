@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Dự án: {{ project[1] }}</h2>
+{% if session.username and get_user_role(session.username) == 'admin' %}
+<form method="POST" action="{{ url_for('add_task_route', project_id=project[0]) }}">
+    <div class="mb-3">
+        <label class="form-label">Tên công việc</label>
+        <input type="text" name="title" class="form-control" required>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Giao cho</label>
+        <input type="text" name="assignee" class="form-control" required>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Hạn hoàn thành</label>
+        <input type="date" name="due_date" class="form-control" required>
+    </div>
+    <button type="submit" class="btn btn-success">Thêm công việc</button>
+</form>
+{% endif %}
+
+<h3 class="mt-4">Danh sách công việc</h3>
+<table class="table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Tên công việc</th>
+            <th>Giao cho</th>
+            <th>Hạn hoàn thành</th>
+            <th>Trạng thái</th>
+            <th>Hành động</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for task in tasks %}
+        <tr>
+            <td>{{ task[0] }}</td>
+            <td>{{ task[1] }}</td>
+            <td>{{ task[2] }}</td>
+            <td>{{ task[3] }}</td>
+            <td>{{ task[6] }}</td>
+            <td>
+                {% if session.username and get_user_role(session.username) == 'admin' %}
+                <a href="{{ url_for('edit_task', task_id=task[0]) }}" class="btn btn-warning btn-sm">Sửa</a>
+                <a href="{{ url_for('delete_task_route', task_id=task[0], project_id=project[0]) }}" class="btn btn-danger btn-sm" onclick="return confirm('Bạn có chắc muốn xóa?')">Xóa</a>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Quay lại</a>
+{% endblock %}

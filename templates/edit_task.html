@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Sửa công việc</h2>
+<form method="POST">
+    <div class="mb-3">
+        <label class="form-label">Tên công việc</label>
+        <input type="text" name="title" class="form-control" value="{{ task[1] }}" required>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Giao cho</label>
+        <input type="text" name="assignee" class="form-control" value="{{ task[2] }}" required>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Hạn hoàn thành</label>
+        <input type="date" name="due_date" class="form-control" value="{{ task[3] }}" required>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Trạng thái</label>
+        <select name="status" class="form-control">
+            <option value="pending" {% if task[6] == 'pending' %}selected{% endif %}>Chưa hoàn thành</option>
+            <option value="completed" {% if task[6] == 'completed' %}selected{% endif %}>Hoàn thành</option>
+        </select>
+    </div>
+    <input type="hidden" name="project_id" value="{{ task[4] }}">
+    <button type="submit" class="btn btn-primary">Cập nhật</button>
+    <a href="{{ url_for('project_tasks', project_id=task[4]) }}" class="btn btn-secondary">Hủy</a>
+</form>
+{% endblock %}

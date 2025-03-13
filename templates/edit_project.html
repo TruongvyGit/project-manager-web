@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Sửa dự án</h2>
+<form method="POST">
+    <div class="mb-3">
+        <label class="form-label">Tên dự án</label>
+        <input type="text" name="name" class="form-control" value="{{ project[1] }}" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Cập nhật</button>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Hủy</a>
+</form>
+{% endblock %}
