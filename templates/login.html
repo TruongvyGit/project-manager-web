@@ -8,8 +8,12 @@
     </div>
     <div class="mb-3">
         <label class="form-label">Mật khẩu</label>
-        <input type="password" name="password" class="form-control" required>
+        <div class="input-group">
+            <input type="password" name="password" id="password" class="form-control" required>
+            <button type="button" class="btn btn-outline-secondary" onclick="togglePassword('password')">Hiện</button>
+        </div>
     </div>
     <button type="submit" class="btn btn-primary">Đăng nhập</button>
+    <p>Chưa có tài khoản? <a href="{{ url_for('register') }}">Đăng ký</a></p>
 </form>
 {% endblock %}

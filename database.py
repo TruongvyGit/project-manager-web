@@ -3,10 +3,11 @@ import sqlite3
 def init_db():
     conn = sqlite3.connect('project.db')
     c = conn.cursor()
-    # Bảng users
+    # Bảng users với trường email
     c.execute('''CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE,
+        email TEXT UNIQUE,
         password TEXT,
         role TEXT DEFAULT 'member')''')
     # Bảng tasks
@@ -20,11 +21,11 @@ def init_db():
     conn.commit()
     conn.close()
 
-def add_user(username, password, role='member'):
+def add_user(username, password, role='member', email=None):
     conn = sqlite3.connect('project.db')
     c = conn.cursor()
-    c.execute('INSERT INTO users (username, password, role) VALUES (?, ?, ?)', 
-              (username, password, role))
+    c.execute('INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)', 
+              (username, email, password, role))
     conn.commit()
     conn.close()
 
@@ -64,5 +65,5 @@ def get_tasks():
 # Thêm người dùng mẫu
 if __name__ == "__main__":
     init_db()
-    add_user('admin', 'admin123', 'admin')
-    add_user('user1', 'pass123', 'member')
+    add_user('admin', 'admin123', 'admin', 'admin@example.com')
+    add_user('user1', 'pass123', 'member', 'user1@example.com')
