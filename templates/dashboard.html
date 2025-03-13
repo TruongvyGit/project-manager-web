@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Dashboard</h2>
+<form method="POST" action="{{ url_for('add_task_route') }}">
+    <div class="mb-3">
+        <label class="form-label">Tên công việc</label>
+        <input type="text" name="title" class="form-control" required>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Giao cho</label>
+        <input type="text" name="assignee" class="form-control" required>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Hạn hoàn thành</label>
+        <input type="date" name="due_date" class="form-control" required>
+    </div>
+    <button type="submit" class="btn btn-success">Thêm công việc</button>
+</form>
+
+<h3 class="mt-4">Danh sách công việc</h3>
+<table class="table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Tên công việc</th>
+            <th>Giao cho</th>
+            <th>Hạn hoàn thành</th>
+            <th>Trạng thái</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for task in tasks %}
+        <tr>
+            <td>{{ task[0] }}</td>
+            <td>{{ task[1] }}</td>
+            <td>{{ task[2] }}</td>
+            <td>{{ task[3] }}</td>
+            <td>{{ task[5] }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
