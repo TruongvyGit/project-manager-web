@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <h2>Dự án: {{ project[1] }}</h2>
-{% if role == 'admin' %}
+{% if user_role == 'admin' or project_role == 'Leader' %}
 <form method="POST" action="{{ url_for('add_task_route', project_id=project[0]) }}">
     <div class="mb-3">
         <label class="form-label">Tên công việc</label>
@@ -9,38 +9,152 @@
     </div>
     <div class="mb-3">
         <label class="form-label">Giao cho</label>
-        <input type="text" name="assignee" class="form-control" required>
+        <select name="assignee" class="form-control" required>
+            {% for member in members %}
+            <option value="{{ member[5] }}">{{ member[5] }}</option>
+            {% endfor %}
+        </select>
     </div>
     <div class="mb-3">
         <label class="form-label">Hạn hoàn thành</label>
         <input type="date" name="due_date" class="form-control" required>
     </div>
+    <div class="mb-3">
+        <label class="form-label">Mô tả</label>
+        <textarea name="description" class="form-control" rows="3"></textarea>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Nhãn</label>
+        <select name="label_id" class="form-control">
+            <option value="">Không có nhãn</option>
+            {% for label in labels %}
+            <option value="{{ label[0] }}">{{ label[1] }}</option>
+            {% endfor %}
+        </select>
+    </div>
     <button type="submit" class="btn btn-success">Thêm công việc</button>
 </form>
+
+<h4 class="mt-4">Quản lý nhãn</h4>
+<form method="POST" action="{{ url_for('add_label_route', project_id=project[0]) }}">
+    <div class="mb-3">
+        <label class="form-label">Tên nhãn</label>
+        <input type="text" name="label_name" class="form-control" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Thêm nhãn</button>
+</form>
+<table class="table mt-3">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Tên nhãn</th>
+            <th>Hành động</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for label in labels %}
+        <tr>
+            <td>{{ label[0] }}</td>
+            <td>{{ label[1] }}</td>
+            <td>
+                <a href="{{ url_for('edit_label', label_id=label[0], project_id=project[0]) }}" class="btn btn-warning btn-sm">Sửa</a>
+                <a href="{{ url_for('delete_label_route', label_id=label[0], project_id=project[0]) }}" class="btn btn-danger btn-sm" onclick="return confirm('Bạn có chắc muốn xóa?')">Xóa</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h4 class="mt-4">Quản lý thành viên</h4>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Tên thành viên</th>
+            <th>Vai trò</th>
+            <th>Hành động</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for member in members %}
+        <tr>
+            <td>{{ member[5] }}</td>
+            <td>{{ member[3] }}</td>
+            <td>
+                {% if member[3] != 'Leader' or user_role == 'admin' %}
+                <form method="POST" action="{{ url_for('assign_role', project_id=project[0], user_id=member[2]) }}" style="display:inline;">
+                    <select name="role" onchange="this.form.submit()">
+                        <option value="Member" {% if member[3] == 'Member' %}selected{% endif %}>Member</option>
+                        <option value="Leader" {% if member[3] == 'Leader' %}selected{% endif %}>Leader</option>
+                    </select>
+                </form>
+                <a href="{{ url_for('remove_member_route', project_id=project[0], user_id=member[2]) }}" class="btn btn-danger btn-sm" onclick="return confirm('Bạn có chắc muốn xóa?')">Xóa</a>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h4 class="mt-4">Yêu cầu gia nhập</h4>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Tên người dùng</th>
+            <th>Hành động</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for req in pending_requests %}
+        <tr>
+            <td>{{ req[5] }}</td>
+            <td>
+                <a href="{{ url_for('approve_member_route', request_id=req[0], project_id=project[0]) }}" class="btn btn-success btn-sm">Phê duyệt</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
 {% endif %}
 
 <h3 class="mt-4">Danh sách công việc</h3>
 <table class="table">
     <thead>
         <tr>
-            <th>ID</th>
+            <th>Hoàn thành</th>
+            <th>Trạng thái</th>
             <th>Tên công việc</th>
             <th>Giao cho</th>
             <th>Hạn hoàn thành</th>
-            <th>Trạng thái</th>
+            <th>Mô tả</th>
+            <th>Nhãn</th>
             <th>Hành động</th>
         </tr>
     </thead>
     <tbody>
         {% for task in tasks %}
         <tr>
-            <td>{{ task[0] }}</td>
+            <td>
+                <form method="POST" action="{{ url_for('update_task_status', task_id=task[0], project_id=project[0]) }}">
+                    <input type="checkbox" name="completed" {% if task[7] == 'done' %}checked{% endif %} onchange="this.form.submit()">
+            </td>
+            <td>
+                    {% if task[7] != 'done' %}
+                    <select name="status" onchange="this.form.submit()">
+                        <option value="todo" {% if task[7] == 'todo' %}selected{% endif %}>To Do</option>
+                        <option value="in progress" {% if task[7] == 'in progress' %}selected{% endif %}>In Progress</option>
+                    </select>
+                    {% else %}
+                    Done
+                    {% endif %}
+                </form>
+            </td>
             <td>{{ task[1] }}</td>
             <td>{{ task[2] }}</td>
             <td>{{ task[3] }}</td>
-            <td>{{ task[6] }}</td>
+            <td>{{ task[8] }}</td>
+            <td>{{ task[9] if task[9] else 'Không có nhãn' }}</td>
             <td>
-                {% if role == 'admin' %}
+                {% if user_role == 'admin' or project_role == 'Leader' %}
                 <a href="{{ url_for('edit_task', task_id=task[0]) }}" class="btn btn-warning btn-sm">Sửa</a>
                 <a href="{{ url_for('delete_task_route', task_id=task[0], project_id=project[0]) }}" class="btn btn-danger btn-sm" onclick="return confirm('Bạn có chắc muốn xóa?')">Xóa</a>
                 {% endif %}
@@ -49,5 +163,6 @@
         {% endfor %}
     </tbody>
 </table>
+<a href="{{ url_for('leave_project', project_id=project[0]) }}" class="btn btn-warning">Rời dự án</a>
 <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Quay lại</a>
 {% endblock %}

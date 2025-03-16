@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% block title %}Task List{% endblock %}
+{% block content %}
+<style>
+    .sidebar {
+        width: 250px;
+        position: fixed;
+        top: 60px;
+        left: 0;
+        height: calc(100% - 60px);
+        background-color: #f8f9fa;
+        padding: 10px;
+        border-right: 1px solid #e0e0e0;
+    }
+    .sidebar a {
+        display: block;
+        padding: 10px;
+        color: #333;
+        text-decoration: none;
+    }
+    .sidebar a.active {
+        background-color: #E6E6FA;
+        color: #6A5ACD;
+    }
+    .sidebar a:hover {
+        background-color: #e9ecef;
+    }
+    .content {
+        margin-left: 250px;
+        padding: 20px;
+    }
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 20px;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    .header .btn-create {
+        background-color: #6A5ACD;
+        color: #fff;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 5px;
+    }
+    .header .right-section {
+        display: flex;
+        align-items: center;
+    }
+    .header .right-section input {
+        margin-right: 10px;
+        padding: 5px;
+        border-radius: 5px;
+        border: 1px solid #e0e0e0;
+    }
+    .header .right-section a {
+        margin-left: 10px;
+        color: #333;
+        text-decoration: none;
+        font-size: 14px;
+    }
+    .header .right-section a:hover {
+        color: #6A5ACD;
+    }
+    .task-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+    .task-table th, .task-table td {
+        padding: 10px;
+        border-bottom: 1px solid #e0e0e0;
+        text-align: left;
+    }
+    .task-table th {
+        background-color: #f8f9fa;
+        font-weight: bold;
+    }
+    .task-table .status {
+        padding: 5px 10px;
+        border-radius: 5px;
+        color: #fff;
+    }
+    .task-table .todo { background-color: #dc3545; }
+    .task-table .in-progress { background-color: #fd7e14; }
+</style>
+
+<div class="sidebar">
+    <h4>Project Name</h4>
+    <p>Projects / {{ project[1] }}</p>
+    <a href="#" {% if request.path == url_for('tasklist_view', project_id=project[0]) + '#summary' %}class="active"{% endif %}>Summary</a>
+    <a href="#" {% if request.path == url_for('tasklist_view', project_id=project[0]) + '#timeline' %}class="active"{% endif %}>Timeline</a>
+    <a href="#" {% if request.path == url_for('tasklist_view', project_id=project[0]) + '#board' %}class="active"{% endif %}>Board</a>
+    <a href="{{ url_for('tasklist_view', project_id=project[0]) }}" {% if request.path == url_for('tasklist_view', project_id=project[0]) %}class="active"{% endif %}>Task list</a>
+    <a href="#" {% if request.path == url_for('tasklist_view', project_id=project[0]) + '#members' %}class="active"{% endif %}>Manage members</a>
+</div>
+
+<div class="content">
+    <div class="header">
+        <div class="left-section">
+            <h2>Task List</h2>
+            <button class="btn-create" data-bs-toggle="modal" data-bs-target="#addTaskModal">+ Create</button>
+        </div>
+        <div class="right-section">
+            <input type="text" placeholder="Search this list" style="width: 150px;">
+            <a href="#" title="Share">📤</a>
+            <a href="#" title="Filter">🔽</a>
+        </div>
+    </div>
+
+    <!-- Task Table -->
+    <table class="task-table">
+        <thead>
+            <tr>
+                <th>Type</th>
+                <th>#</th>
+                <th>Key</th>
+                <th>Summary</th>
+                <th>Status</th>
+                <th>Sprint</th>
+                <th>Assignee</th>
+                <th>Last start</th>
+                <th>Due</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for task in tasks %}
+            <tr>
+                <td>{% if task[8] == 'task' %}⬜{% elif task[8] == 'story' %}🟩{% elif task[8] == 'epic' %}⚡{% elif task[8] == 'bug' %}❗{% endif %}</td>
+                <td>⬜</td>
+                <td>{{ task[5] }}</td>
+                <td>{{ task[1] }}</td>
+                <td><span class="status {{ task[7]|lower|replace(' ', '-') }}">{{ task[7] }}</span></td>
+                <td>-</td>
+                <td>{{ task[2] }}</td>
+                <td>{{ task[3] }}</td>
+                <td>{{ task[4] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Modal thêm task -->
+    <div class="modal fade" id="addTaskModal" tabindex="-1" aria-labelledby="addTaskModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addTaskModalLabel">Thêm Task mới</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form method="POST" action="{{ url_for('add_task_route', project_id=project[0]) }}" id="addTaskForm">
+                        <div class="mb-3">
+                            <label class="form-label">Loại</label>
+                            <select name="type" class="form-control" required>
+                                <option value="task">Task</option>
+                                <option value="story">Story</option>
+                                <option value="epic">Epic</option>
+                                <option value="bug">Bug</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Tên Task</label>
+                            <input type="text" name="title" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Mô tả</label>
+                            <textarea name="description" class="form-control" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Giao cho</label>
+                            <select name="assignee" class="form-control">
+                                <option value="">Chọn thành viên</option>
+                                {% for member in project_members %}
+                                <option value="{{ member[2] }}">{{ member[2] }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Hạn hoàn thành</label>
+                            <input type="date" name="due_date" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Trạng thái</label>
+                            <select name="status" class="form-control">
+                                <option value="To Do">To Do</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="Done">Done</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" form="addTaskForm" class="btn btn-primary">Thêm Task</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Dự án: {{ project[1] }} - Quản lý thành viên</h2>
+
+{% if user_role == 'admin' or project_role == 'Leader' %}
+<h4 class="mt-4">Thành viên</h4>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Tên thành viên</th>
+            <th>Vai trò</th>
+            <th>Hành động</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for member in members %}
+        <tr>
+            <td>{{ member[5] }}</td>
+            <td>{{ member[3] }}</td>
+            <td>
+                {% if member[3] != 'Leader' or user_role == 'admin' %}
+                <form method="POST" action="{{ url_for('assign_role', project_id=project[0], user_id=member[2]) }}" style="display:inline;">
+                    <select name="role" onchange="this.form.submit()">
+                        <option value="Member" {% if member[3] == 'Member' %}selected{% endif %}>Member</option>
+                        <option value="Leader" {% if member[3] == 'Leader' %}selected{% endif %}>Leader</option>
+                    </select>
+                </form>
+                <a href="{{ url_for('remove_member_route', project_id=project[0], user_id=member[2]) }}" class="btn btn-danger btn-sm" onclick="return confirm('Bạn có chắc muốn xóa?')">Xóa</a>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h4 class="mt-4">Yêu cầu gia nhập</h4>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Tên người dùng</th>
+            <th>Hành động</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for req in pending_requests %}
+        <tr>
+            <td>{{ req[5] }}</td>
+            <td>
+                <a href="{{ url_for('approve_member_route', request_id=req[0], project_id=project[0]) }}" class="btn btn-success btn-sm">Phê duyệt</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+<a href="{{ url_for('leave_project', project_id=project[0]) }}" class="btn btn-warning mt-3">Rời dự án</a>
+<a href="{{ url_for('dashboard') }}" class="btn btn-secondary mt-3">Quay lại</a>
+<a href="{{ url_for('project_tasks', project_id=project[0]) }}" class="btn btn-primary mt-3">Công việc</a>
+<a href="{{ url_for('project_labels', project_id=project[0]) }}" class="btn btn-primary mt-3">Nhãn</a>
+{% endblock %}

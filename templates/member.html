@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Members{% endblock %}
+{% block content %}
+<style>
+    .breadcrumb {
+        margin-left: 0;
+        padding: 10px 20px;
+        background-color: #f5f5f5;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    /* Các style khác giữ nguyên */
+</style>
+
+<nav aria-label="breadcrumb" class="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Project Manager</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('project_list') }}">{{ project[1] }}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Member</li>
+    </ol>
+</nav>
+
+<div class="content" style="margin-left: 0;">
+    <!-- Nội dung member giữ nguyên -->
+    <h2>Members for {{ project[1] }}</h2>
+    <!-- Thêm form add member nếu cần -->
+</div>
+{% endblock %}
