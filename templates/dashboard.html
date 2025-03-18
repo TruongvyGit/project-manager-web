@@ -1,100 +1,8 @@
 {% extends "base.html" %}
 {% block content %}
-<style>
-    .project-card {
-        border: 1px solid #ddd;
-        border-radius: 15px;
-        margin-bottom: 20px;
-        background-color: #fff;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        height: 100%;
-        overflow: hidden;
-        position: relative;
-        aspect-ratio: 1 / 1; /* Tạo hình vuông */
-        width: 100%; /* Đảm bảo chiều rộng tự động điều chỉnh */
-        max-width: 250px; /* Giới hạn chiều rộng tối đa */
-    }
-    .project-card .header {
-        background-color: #ffe6e6;
-        padding: 10px 15px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    .project-card .header h5 {
-        margin: 0;
-        font-size: 1.2rem;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 80%;
-    }
-    .project-card .body {
-        padding: 10px;
-        cursor: pointer;
-        height: calc(100% - 40px); /* Điều chỉnh chiều cao body */
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-    }
-    .project-card .body p {
-        margin: 5px 0;
-        color: #666;
-        font-size: 0.9rem;
-    }
-    .dropdown-menu {
-        display: none;
-        position: absolute;
-        bottom: 40px; /* Di chuyển xuống dưới */
-        right: 10px; /* Giữ ở góc phải */
-        background-color: #fff;
-        border: 1px solid #ddd;
-        border-radius: 5px;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        z-index: 1000;
-        left: -20px; /* Di chuyển sang trái để tránh lỗi hiển thị */
-    }
-    .dropdown-menu a {
-        display: block;
-        padding: 8px 15px;
-        color: #333;
-        text-decoration: none;
-        font-size: 0.9rem;
-    }
-    .dropdown-menu a:hover {
-        background-color: #f1f1f1;
-    }
-    .dropdown-toggle {
-        cursor: pointer;
-        font-size: 1.2rem;
-    }
-    .project-label {
-        position: absolute;
-        top: 5px;
-        left: 5px;
-        background-color: #28a745;
-        color: white;
-        padding: 2px 8px;
-        border-radius: 5px;
-        font-size: 0.8rem;
-    }
-    .project-label.guest {
-        background-color: #6c757d;
-    }
-    .title-row {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-bottom: 20px;
-    }
-</style>
+<h2>Dự án của tôi</h2>
+<button type="button" class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#addProjectModal">Thêm dự án</button>
 
-<div class="title-row">
-    <h2>Dự án</h2>
-    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addProjectModal">Thêm dự án</button>
-</div>
-
-<!-- Modal -->
 <div class="modal fade" id="addProjectModal" tabindex="-1" aria-labelledby="addProjectModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -169,77 +77,52 @@ function addMemberField() {
     `;
     memberFields.appendChild(newField);
 }
-
-function toggleDropdown(projectId) {
-    const dropdown = document.getElementById(`dropdown-${projectId}`);
-    if (dropdown.style.display === "block") {
-        dropdown.style.display = "none";
-    } else {
-        // Đóng tất cả dropdown khác trước khi mở cái mới
-        document.querySelectorAll('.dropdown-menu').forEach(menu => {
-            menu.style.display = 'none';
-        });
-        dropdown.style.display = "block";
-    }
-}
-
-// Đóng dropdown khi nhấn ra ngoài
-document.addEventListener('click', function(event) {
-    const dropdowns = document.querySelectorAll('.dropdown-menu');
-    const toggles = document.querySelectorAll('.dropdown-toggle');
-    let isToggle = false;
-    toggles.forEach(toggle => {
-        if (toggle.contains(event.target)) {
-            isToggle = true;
-        }
-    });
-    if (!isToggle) {
-        dropdowns.forEach(dropdown => {
-            dropdown.style.display = 'none';
-        });
-    }
-});
 </script>
 
-<div class="row">
-    {% for project, member_count, task_count in my_projects %}
-    <div class="col-md-3">
-        <div class="project-card">
-            <div class="project-label">Sở hữu</div>
-            <div class="header">
-                <h5>{{ project[1] }}</h5>
+<h3 class="mt-4">Dự án của tôi</h3>
+<table class="table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Tên dự án</th>
+            <th>Hành động</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for project in my_projects %}
+        <tr>
+            <td>{{ project[0] }}</td>
+            <td><a href="{{ url_for('project_tasks', project_id=project[0]) }}">{{ project[1] }}</a></td>
+            <td>
                 {% if role == 'admin' or project[2] == session.username %}
-                <div class="dropdown">
-                    <span class="dropdown-toggle" onclick="toggleDropdown({{ project[0] }})">⋮</span>
-                    <div class="dropdown-menu" id="dropdown-{{ project[0] }}">
-                        <a href="{{ url_for('edit_project', project_id=project[0]) }}">Sửa</a>
-                        <a href="{{ url_for('delete_project_route', project_id=project[0]) }}" onclick="return confirm('Bạn có chắc muốn xóa?')">Xóa</a>
-                    </div>
-                </div>
+                <a href="{{ url_for('edit_project', project_id=project[0]) }}" class="btn btn-warning btn-sm">Sửa</a>
+                <a href="{{ url_for('delete_project_route', project_id=project[0]) }}" class="btn btn-danger btn-sm" onclick="return confirm('Bạn có chắc muốn xóa?')">Xóa</a>
                 {% endif %}
-            </div>
-            <div class="body" onclick="window.location.href='{{ url_for('project_tasks', project_id=project[0]) }}'">
-                <p>Thành viên: {{ member_count }}</p>
-                <p>Nhiệm vụ: {{ task_count }}</p>
-            </div>
-        </div>
-    </div>
-    {% endfor %}
-    {% for project, member_count, task_count in joined_projects %}
-    <div class="col-md-3">
-        <div class="project-card">
-            <div class="project-label guest">Khách</div>
-            <div class="header">
-                <h5>{{ project[1] }}</h5>
-            </div>
-            <div class="body" onclick="window.location.href='{{ url_for('project_tasks', project_id=project[0]) }}'">
-                <p>Thành viên: {{ member_count }}</p>
-                <p>Nhiệm vụ: {{ task_count }}</p>
-            </div>
-        </div>
-    </div>
-    {% endfor %}
-</div>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h3 class="mt-4">Dự án tôi tham gia</h3>
+<table class="table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Tên dự án</th>
+            <th>Người tạo</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for project in joined_projects %}
+        <tr>
+            <td>{{ project[0] }}</td>
+            <td><a href="{{ url_for('project_tasks', project_id=project[0]) }}">{{ project[1] }}</a></td>
+            <td>{{ project[2] }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
 
 <h3 class="mt-4">Tất cả dự án</h3>
 <table class="table">

@@ -9,10 +9,6 @@ def init_db():
         email TEXT UNIQUE,
         password TEXT,
         role TEXT DEFAULT 'user')''')
-    try:
-        c.execute('ALTER TABLE users ADD COLUMN email TEXT UNIQUE')
-    except sqlite3.OperationalError:
-        pass
     c.execute('''CREATE TABLE IF NOT EXISTS projects (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT,
@@ -107,22 +103,6 @@ def get_projects():
     projects = c.fetchall()
     conn.close()
     return projects
-
-def get_project_member_count(project_id):
-    conn = sqlite3.connect('project.db')
-    c = conn.cursor()
-    c.execute('SELECT COUNT(*) FROM project_members WHERE project_id = ? AND status = "approved"', (project_id,))
-    count = c.fetchone()[0]
-    conn.close()
-    return count
-
-def get_project_task_count(project_id):
-    conn = sqlite3.connect('project.db')
-    c = conn.cursor()
-    c.execute('SELECT COUNT(*) FROM tasks WHERE project_id = ?', (project_id,))
-    count = c.fetchone()[0]
-    conn.close()
-    return count
 
 def update_project(project_id, name):
     conn = sqlite3.connect('project.db')

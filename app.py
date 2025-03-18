@@ -1,14 +1,27 @@
 from flask import Flask, render_template, request, redirect, url_for, session
+import sqlite3
 from database import (init_db, add_user, get_user, get_user_by_username, get_all_users, get_user_role, get_project_role, 
-                     add_project, add_project_member, get_projects, get_project_member_count, get_project_task_count, 
-                     update_project, delete_project, add_label, get_labels, update_label, delete_label, add_task, 
-                     get_tasks, update_task, delete_task, request_join_project, get_pending_requests, approve_member, 
-                     remove_member, update_member_role, get_project_members, get_my_projects, get_joined_projects)
+                     add_project, add_project_member, get_projects, update_project, delete_project,
+                     add_label, get_labels, update_label, delete_label, add_task, get_tasks, update_task, delete_task,
+                     request_join_project, get_pending_requests, approve_member, remove_member,
+                     update_member_role, get_project_members, get_my_projects, get_joined_projects)
+import os
 
 app = Flask(__name__)
-app.secret_key = 'supersecretkey123'
+app.secret_key = os.environ.get('SECRET_KEY', 'supersecretkey123')
+
+# Đăng ký các hàm để dùng trong Jinja2
+app.jinja_env.globals.update(get_user_role=get_user_role, get_project_role=get_project_role)
 
 init_db()
+
+def get_user_by_credentials(credential, password):
+    conn = sqlite3.connect('project.db')
+    c = conn.cursor()
+    c.execute('SELECT * FROM users WHERE (username = ? OR email = ?) AND password = ?', (credential, credential, password))
+    user = c.fetchone()
+    conn.close()
+    return user
 
 @app.route('/')
 def index():
@@ -19,13 +32,13 @@ def index():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form['username']
+        credential = request.form['credential']
         password = request.form['password']
-        user = get_user(username, password)
+        user = get_user_by_credentials(credential, password)
         if user:
-            session['username'] = username
+            session['username'] = user[1]
             return redirect(url_for('dashboard'))
-        return "Sai thông tin đăng nhập!"
+        return "Sai thông tin đăng nhập hoặc mật khẩu!"
     return render_template('login.html')
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -37,7 +50,7 @@ def register():
         confirm_password = request.form['confirm_password']
         if password != confirm_password:
             return "Mật khẩu không khớp!"
-        if get_user(username, password):
+        if get_user_by_username(username):
             return "Tên đăng nhập đã được sử dụng!"
         add_user(username, password, 'user', email)
         return redirect(url_for('login'))
@@ -52,20 +65,7 @@ def dashboard():
     all_projects = get_projects()
     role = get_user_role(session['username'])
     all_users = get_all_users()
-
-    # Lấy số thành viên và nhiệm vụ cho từng dự án
-    my_projects_with_details = [
-        (project, get_project_member_count(project[0]), get_project_task_count(project[0]))
-        for project in my_projects
-    ]
-    joined_projects_with_details = [
-        (project, get_project_member_count(project[0]), get_project_task_count(project[0]))
-        for project in joined_projects
-    ]
-
-    return render_template('dashboard.html', my_projects=my_projects_with_details, 
-                          joined_projects=joined_projects_with_details, all_projects=all_projects, 
-                          role=role, all_users=all_users)
+    return render_template('dashboard.html', my_projects=my_projects, joined_projects=joined_projects, all_projects=all_projects, role=role, all_users=all_users)
 
 @app.route('/add_project', methods=['POST'])
 def add_project_route():
@@ -73,14 +73,11 @@ def add_project_route():
         return redirect(url_for('login'))
     name = request.form['name']
     project_id = add_project(name, session['username'])
-    
-    # Thêm thành viên nếu có
     members = request.form.getlist('members')
     roles = request.form.getlist('roles')
     for member, role in zip(members, roles):
         if member and role:
             add_project_member(project_id, member, role)
-    
     return redirect(url_for('dashboard'))
 
 @app.route('/edit_project/<int:project_id>', methods=['GET', 'POST'])
@@ -110,7 +107,37 @@ def delete_project_route(project_id):
     delete_project(project_id)
     return redirect(url_for('dashboard'))
 
-@app.route('/project/<int:project_id>')
+# Route cho trang Members
+@app.route('/project/<int:project_id>/members')
+def project_members(project_id):
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    project_role = get_project_role(project_id, session['username'])
+    user_role = get_user_role(session['username'])
+    if not project_role and user_role != 'admin':
+        return "Bạn không có quyền truy cập dự án này!"
+    projects = get_projects()
+    project = next((p for p in projects if p[0] == project_id), None)
+    members = get_project_members(project_id)
+    pending_requests = get_pending_requests(project_id)
+    return render_template('project_members.html', project=project, project_role=project_role, members=members, pending_requests=pending_requests, user_role=user_role)
+
+# Route cho trang Labels
+@app.route('/project/<int:project_id>/labels')
+def project_labels(project_id):
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    project_role = get_project_role(project_id, session['username'])
+    user_role = get_user_role(session['username'])
+    if not project_role and user_role != 'admin':
+        return "Bạn không có quyền truy cập dự án này!"
+    projects = get_projects()
+    project = next((p for p in projects if p[0] == project_id), None)
+    labels = get_labels()
+    return render_template('project_labels.html', project=project, project_role=project_role, labels=labels, user_role=user_role)
+
+# Route cho trang Tasks
+@app.route('/project/<int:project_id>/tasks')
 def project_tasks(project_id):
     if 'username' not in session:
         return redirect(url_for('login'))
@@ -118,14 +145,12 @@ def project_tasks(project_id):
     user_role = get_user_role(session['username'])
     if not project_role and user_role != 'admin':
         return "Bạn không có quyền truy cập dự án này!"
-    tasks = get_tasks(project_id)
     projects = get_projects()
-    labels = get_labels()
     project = next((p for p in projects if p[0] == project_id), None)
+    tasks = get_tasks(project_id)
+    labels = get_labels()
     members = get_project_members(project_id)
-    pending_requests = get_pending_requests(project_id)
-    return render_template('project_tasks.html', project=project, tasks=tasks, labels=labels, project_role=project_role, 
-                          members=members, pending_requests=pending_requests, user_role=user_role)
+    return render_template('project_tasks.html', project=project, tasks=tasks, labels=labels, project_role=project_role, members=members, user_role=user_role)
 
 @app.route('/add_task/<int:project_id>', methods=['POST'])
 def add_task_route(project_id):
@@ -189,7 +214,7 @@ def add_label_route(project_id):
         return "Bạn không có quyền thêm nhãn!"
     name = request.form['label_name']
     add_label(name, session['username'])
-    return redirect(url_for('project_tasks', project_id=project_id))
+    return redirect(url_for('project_labels', project_id=project_id))
 
 @app.route('/edit_label/<int:label_id>/<int:project_id>', methods=['GET', 'POST'])
 def edit_label(label_id, project_id):
@@ -202,7 +227,7 @@ def edit_label(label_id, project_id):
     if request.method == 'POST':
         name = request.form['label_name']
         update_label(label_id, name)
-        return redirect(url_for('project_tasks', project_id=project_id))
+        return redirect(url_for('project_labels', project_id=project_id))
     labels = get_labels()
     label = next((l for l in labels if l[0] == label_id), None)
     return render_template('edit_label.html', label=label, project_id=project_id)
@@ -216,7 +241,7 @@ def delete_label_route(label_id, project_id):
     if user_role != 'admin' and project_role != 'Leader':
         return "Bạn không có quyền xóa nhãn!"
     delete_label(label_id)
-    return redirect(url_for('project_tasks', project_id=project_id))
+    return redirect(url_for('project_labels', project_id=project_id))
 
 @app.route('/update_task_status/<int:task_id>/<int:project_id>', methods=['POST'])
 def update_task_status(task_id, project_id):
@@ -249,7 +274,7 @@ def approve_member_route(request_id, project_id):
     if user_role != 'admin' and project_role != 'Leader':
         return "Bạn không có quyền phê duyệt!"
     approve_member(request_id)
-    return redirect(url_for('project_tasks', project_id=project_id))
+    return redirect(url_for('project_members', project_id=project_id))
 
 @app.route('/remove_member/<int:project_id>/<int:user_id>')
 def remove_member_route(project_id, user_id):
@@ -260,7 +285,7 @@ def remove_member_route(project_id, user_id):
     if user_role != 'admin' and project_role != 'Leader':
         return "Bạn không có quyền xóa thành viên!"
     remove_member(project_id, user_id)
-    return redirect(url_for('project_tasks', project_id=project_id))
+    return redirect(url_for('project_members', project_id=project_id))
 
 @app.route('/leave_project/<int:project_id>')
 def leave_project(project_id):
@@ -284,7 +309,7 @@ def assign_role(project_id, user_id):
         return "Bạn không có quyền thay đổi vai trò!"
     new_role = request.form['role']
     update_member_role(project_id, user_id, new_role)
-    return redirect(url_for('project_tasks', project_id=project_id))
+    return redirect(url_for('project_members', project_id=project_id))
 
 @app.route('/logout')
 def logout():
@@ -292,4 +317,5 @@ def logout():
     return redirect(url_for('login'))
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
