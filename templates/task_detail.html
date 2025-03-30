@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+    <h1>Task: {{ task['TaskName'] }}</h1>
+    <p><strong>Project:</strong> {{ task['ProjectName'] }}</p>
+    <p><strong>Description:</strong> {{ task['Description'] or 'No description' }}</p>
+    <p><strong>Status:</strong> {{ task['Status'] }}</p>
+    <p><strong>Priority:</strong> {{ task['Priority'] }}</p>
+    <p><strong>Start Date & Time:</strong> {{ task['StartDateTime'] or 'Not set' }}</p>
+    <p><strong>Due Date & Time:</strong> {{ task['DueDateTime'] or 'Not set' }}</p>
+    <p><strong>Assignee:</strong> {{ task['AssigneeName'] or 'Unassigned' }}</p>
+    <p><strong>Created At:</strong> {{ task['CreatedAt'] }}</p>
+    <p><strong>Updated At:</strong> {{ task['UpdatedAt'] }}</p>
+
+    <a href="{{ url_for('project', project_id=task['ProjectID']) }}" class="btn btn-primary mt-3">Back to Project</a>
+{% endblock %}

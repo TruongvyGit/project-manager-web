@@ -12,3 +12,4 @@ packaging==24.2
 SQLAlchemy==2.0.39
 typing_extensions==4.13.0
 Werkzeug==3.1.3
+

@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+{% block content %}
+    <h1>{{ project['ProjectName'] }}</h1>
+    <p>{{ project['Description'] }}</p>
+
+    {% if user_role in ['Owner'] %}
+    <div class="mb-4">
+        <button class="btn btn-primary" onclick="openPopup('{{ url_for('edit_project.edit_project', project_id=project['ProjectID']) }}')">Edit Project</button>
+        <button class="btn btn-danger" onclick="openPopup('{{ url_for('edit_project.delete_project', project_id=project['ProjectID']) }}')">Delete Project</button>
+    </div>
+    {% endif %}
+
+    <h3>Members</h3>
+    {% if user_role in ['Owner'] %}
+    <button class="btn btn-success mb-3" onclick="openPopup('{{ url_for('edit_member.add_member', project_id=project['ProjectID']) }}')">Add Member</button>
+    {% endif %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Task được giao</th>
+                {% if user_role in ['Owner'] %}
+                <th>Actions</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for member in members %}
+                <tr>
+                    <td>{{ member['Name'] }}</td>
+                    <td>{{ member['Email'] }}</td>
+                    <td>
+                        {% if member['Role'] == 'Owner' %}
+                            <span>Owner</span>
+                        {% elif user_role in ['Owner'] %}
+                            <form action="{{ url_for('edit_member.edit_member', project_id=project['ProjectID'], member_id=member['MemberID']) }}" method="POST" style="display:inline;">
+                                <select name="role" onchange="this.form.submit()">
+                                    {% for r in ['Leader', 'Member'] %}
+                                        <option value="{{ r }}" {% if member['Role'] == r %}selected{% endif %}>{{ r }}</option>
+                                    {% endfor %}
+                                </select>
+                            </form>
+                        {% else %}
+                            {{ member['Role'] }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if user_role in ['Owner', 'Leader'] %}
+                            <a href="{{ url_for('member_detail', member_id=member['MemberID']) }}">{{ member['TaskCount'] }}</a>
+                        {% else %}
+                            {{ member['TaskCount'] }}
+                        {% endif %}
+                    </td>
+                    {% if user_role in ['Owner'] %}
+                    <td>
+                        {% if member['Role'] != 'Owner' %}
+                            <button class="btn btn-sm btn-danger" onclick="openPopup('{{ url_for('edit_member.delete_member', project_id=project['ProjectID'], member_id=member['MemberID']) }}')">Delete</button>
+                        {% endif %}
+                    </td>
+                    {% endif %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h3>Tasks</h3>
+    {% if user_role in ['Owner', 'Leader'] %}
+    <button class="btn btn-success mb-3" onclick="openPopup('{{ url_for('edit_task.create_task', project_id=project['ProjectID']) }}')">Add Task</button>
+    {% endif %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Completed</th>
+                <th>Task Name</th>
+                <th>Status</th>
+                <th>Priority</th>
+                <th>Start Date & Time</th>
+                <th>Due Date & Time</th>
+                <th>Assignee</th>
+                {% if user_role in ['Owner', 'Leader'] %}
+                <th>Actions</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for task in tasks %}
+                <tr>
+                    <td>
+                        <input type="checkbox" class="task-checkbox" data-task-id="{{ task['TaskID'] }}" {% if task['Status'] == 'Completed' %}checked{% endif %}>
+                    </td>
+                    <td>
+                        <a href="{{ url_for('task_detail', task_id=task['TaskID']) }}">{{ task['TaskName'] }}</a>
+                    </td>
+                    <td>
+                        <select class="task-status" data-task-id="{{ task['TaskID'] }}">
+                            {% for s in ['Not Started', 'In Progress', 'Completed', 'On Hold'] %}
+                                <option value="{{ s }}" {% if task['Status'] == s %}selected{% endif %}>{{ s }}</option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    <td>{{ task['Priority'] }}</td>
+                    <td>{{ task['StartDateTime'] or 'Not set' }}</td>
+                    <td>{{ task['DueDateTime'] or 'Not set' }}</td>
+                    <td>{{ task['AssigneeName'] or 'Unassigned' }}</td>
+                    {% if user_role in ['Owner', 'Leader'] %}
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="openPopup('{{ url_for('edit_task.edit_task', project_id=project['ProjectID'], task_id=task['TaskID']) }}')">Edit</button>
+                        <button class="btn btn-sm btn-danger" onclick="openPopup('{{ url_for('edit_task.delete_task', project_id=project['ProjectID'], task_id=task['TaskID']) }}')">Delete</button>
+                    </td>
+                    {% endif %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div id="popupContainer"></div>
+
+    <script>
+        document.querySelectorAll('.task-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const taskId = this.getAttribute('data-task-id');
+                const status = this.checked ? 'Completed' : 'Not Started';
+                const statusSelect = document.querySelector(`.task-status[data-task-id="${taskId}"]`);
+
+                fetch('/update_task_status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ task_id: taskId, status: status })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        statusSelect.value = status;
+                    } else {
+                        alert('Error: ' + (data.error || 'Failed to update status'));
+                        this.checked = !this.checked;
+                    }
+                })
+                .catch(error => {
+                    console.error('Fetch error:', error);
+                    alert('Failed to update status');
+                    this.checked = !this.checked;
+                });
+            });
+        });
+
+        document.querySelectorAll('.task-status').forEach(select => {
+            select.addEventListener('change', function() {
+                const taskId = this.getAttribute('data-task-id');
+                const status = this.value;
+                const checkbox = document.querySelector(`.task-checkbox[data-task-id="${taskId}"]`);
+
+                fetch('/update_task_status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ task_id: taskId, status: status })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        checkbox.checked = (status === 'Completed');
+                    } else {
+                        alert('Error: ' + (data.error || 'Failed to update status'));
+                        this.value = this.dataset.originalValue || 'Not Started';
+                    }
+                })
+                .catch(error => {
+                    console.error('Fetch error:', error);
+                    alert('Failed to update status');
+                    this.value = this.dataset.originalValue || 'Not Started';
+                });
+
+                this.dataset.originalValue = status;
+            });
+        });
+
+        {% if user_role in ['Owner', 'Leader'] %}
+        document.querySelectorAll('.task-priority').forEach(select => {
+            select.addEventListener('change', function() {
+                const taskId = this.getAttribute('data-task-id');
+                const priority = this.value;
+
+                fetch('/update_task_priority', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ task_id: taskId, priority: priority })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        console.log(`Priority updated task ${taskId} to ${priority}`);
+                    } else {
+                        alert('Error: ' + (data.error || 'Failed to update priority'));
+                        this.value = this.dataset.originalValue || 'Medium';
+                    }
+                })
+                .catch(error => {
+                    console.error('Fetch error:', error);
+                    alert('Failed to update priority');
+                    this.value = this.dataset.originalValue || 'Medium';
+                });
+
+                this.dataset.originalValue = priority;
+            });
+        });
+
+        document.querySelectorAll('.task-assignee').forEach(select => {
+            select.addEventListener('change', function() {
+                const memberId = this.getAttribute('data-member-id');
+                const taskId = this.value;
+                const projectId = this.getAttribute('data-project-id');
+
+                fetch('/update_task_assignee', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ task_id: taskId, assignee_id: memberId })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.querySelectorAll(`select.task-assignee:not([data-member-id="${memberId}"])`).forEach(otherSelect => {
+                            if (otherSelect.value === taskId) {
+                                otherSelect.value = '';
+                            }
+                        });
+                        const assigneeCell = document.querySelector(`tr td:nth-child(7):has(+ td button[onclick*="${taskId}"])`);
+                        assigneeCell.textContent = memberId ? document.querySelector(`select.task-assignee[data-member-id="${memberId}"]`).parentElement.parentElement.cells[0].textContent : 'Unassigned';
+                    } else {
+                        alert('Error: ' + (data.error || 'Failed to update assignee'));
+                        this.value = this.dataset.originalValue || '';
+                    }
+                })
+                .catch(error => {
+                    console.error('Fetch error:', error);
+                    alert('Failed to update assignee');
+                    this.value = this.dataset.originalValue || '';
+                });
+
+                this.dataset.originalValue = taskId;
+            });
+        });
+        {% endif %}
+    </script>
+{% endblock %}

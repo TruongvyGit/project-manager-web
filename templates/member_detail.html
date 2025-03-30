@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+    <h1>Member: {{ member['Name'] }}</h1>
+    <p><strong>Email:</strong> {{ member['Email'] }}</p>
+    <p><strong>Role:</strong> {{ member['Role'] }}</p>
+    <p><strong>Project:</strong> {{ member['ProjectName'] }}</p>
+    <p><strong>Join Date:</strong> {{ member['JoinDate'] or 'Not set' }}</p>
+    <p><strong>Updated At:</strong> {{ member['UpdatedAt'] }}</p>
+
+    <h3>Tasks Assigned</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Task Name</th>
+                <th>Status</th>
+                <th>Priority</th>
+                <th>Start Date & Time</th>
+                <th>Due Date & Time</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for task in tasks %}
+                <tr>
+                    <td><a href="{{ url_for('task_detail', task_id=task['TaskID']) }}">{{ task['TaskName'] }}</a></td>
+                    <td>{{ task['Status'] }}</td>
+                    <td>{{ task['Priority'] }}</td>
+                    <td>{{ task['StartDateTime'] or 'Not set' }}</td>
+                    <td>{{ task['DueDateTime'] or 'Not set' }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{{ url_for('project', project_id=member['ProjectID']) }}" class="btn btn-primary mt-3">Back to Project</a>
+{% endblock %}

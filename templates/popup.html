@@ -1,0 +1,105 @@
+<div class="modal fade" id="actionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    {% if action == 'create_project' %}Create Project
+                    {% elif action == 'edit_project' %}Edit Project
+                    {% elif action == 'delete_project' %}Delete Project
+                    {% elif action == 'create_task' %}Create Task
+                    {% elif action == 'edit_task' %}Edit Task
+                    {% elif action == 'delete_task' %}Delete Task
+                    {% elif action == 'add_member' %}Add Member
+                    {% elif action == 'delete_member' %}Delete Member{% endif %}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="popupForm" method="POST">
+                    {% if action in ['create_project', 'edit_project'] %}
+                        <div class="mb-3">
+                            <label>Name</label>
+                            <input type="text" name="name" class="form-control" value="{{ project['ProjectName'] if project else '' }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label>Description</label>
+                            <textarea name="description" class="form-control">{{ project['Description'] if project else '' }}</textarea>
+                        </div>
+                    {% elif action in ['create_task', 'edit_task'] %}
+                        <div class="mb-3">
+                            <label>Name</label>
+                            <input type="text" name="name" class="form-control" value="{{ task['TaskName'] if task else '' }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label>Description</label>
+                            <textarea name="description" class="form-control">{{ task['Description'] if task else '' }}</textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label>Status</label>
+                            <select name="status" class="form-control">
+                                {% for s in ['Not Started', 'In Progress', 'Completed', 'On Hold'] %}
+                                    <option value="{{ s }}" {% if task and task['Status'] == s %}selected{% endif %}>{{ s }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label>Priority</label>
+                            <select name="priority" class="form-control">
+                                {% for p in ['Low', 'Medium', 'High', 'Urgent'] %}
+                                    <option value="{{ p }}" {% if task and task['Priority'] == p %}selected{% endif %}>{{ p }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label>Start Date & Time</label>
+                            <input type="datetime-local" name="start_datetime" class="form-control" value="{{ task['StartDateTime'] if task else '' }}">
+                        </div>
+                        <div class="mb-3">
+                            <label>Due Date & Time</label>
+                            <input type="datetime-local" name="due_datetime" class="form-control" value="{{ task['DueDateTime'] if task else '' }}">
+                        </div>
+                        <div class="mb-3">
+                            <label>Assignee</label>
+                            <select name="assignee_id" class="form-control">
+                                <option value="">Unassigned</option>
+                                {% for user in users %}
+                                    <option value="{{ user['UserID'] }}" {% if task and task['AssigneeID'] == user['UserID'] %}selected{% endif %}>{{ user['Name'] }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" name="is_completed" id="isCompleted" {% if task and task['Status'] == 'Completed' %}checked{% endif %}>
+                            <label class="form-check-label" for="isCompleted">Mark as Completed</label>
+                        </div>
+                    {% elif action == 'add_member' %}
+                        <div class="mb-3">
+                            <label>User</label>
+                            <select name="user_id" class="form-control" required>
+                                {% for user in users %}
+                                    <option value="{{ user['UserID'] }}">{{ user['Name'] }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label>Role</label>
+                            <select name="role" class="form-control">
+                                {% for r in ['Leader', 'Member'] %}
+                                    <option value="{{ r }}">{{ r }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    {% elif action in ['delete_project', 'delete_task', 'delete_member'] %}
+                        <p>Are you sure you want to delete this item?</p>
+                    {% endif %}
+                    <button type="submit" class="btn btn-primary">
+                        {% if action in ['delete_project', 'delete_task', 'delete_member'] %}
+                            Confirm Delete
+                        {% else %}
+                            Save
+                        {% endif %}
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
